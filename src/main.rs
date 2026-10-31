@@ -1,3 +1,4 @@
+use egui_macroquad::egui;
 use macroquad::prelude::*;
 
 const G: f64 = 6.67430e-11;
@@ -76,15 +77,12 @@ fn draw_background_stars(stars: &Vec<Star>) {
 async fn main() {
     let offset_x = screen_width() / 2.0;
     let offset_y = screen_height() / 2.0;
-    let frame_budget = 1.0 / 60.0;
     let meters_per_pixel = 1e5;
 
-    let physics_hz = 12000000.0;
-    let mut actual_hz = physics_hz;
+    let physics_hz = 60.0;
     let physics_interval = 1.0 / physics_hz;
-    let mut max_phys_count = physics_hz;
 
-    let timewarp = 100000.0;
+    let timewarp = 1.0;
     let dt: f64 = physics_interval * timewarp;
     let mut elapsed_time: f64 = 0.0;
     let mut sim_time: f64 = 0.0;
@@ -116,11 +114,14 @@ async fn main() {
         clear_background(SPACEBLUE);
         draw_background_stars(&stars);
 
-        let physics_start = std::time::Instant::now();
+        egui_macroquad::ui(|egui_ctx| {
+            egui::Window::new("egui ❤ macroquad").show(egui_ctx, |ui| {
+                ui.label("Test");
+            });
+        });
 
         elapsed_time += get_frame_time() as f64;
-        let mut steps = 0.0;
-        while elapsed_time >= physics_interval && steps <= max_phys_count {
+        while elapsed_time >= physics_interval {
             sim_time += dt;
             for i in 0..bodies.len() {
                 let body_pos = bodies[i].pos;
@@ -151,16 +152,6 @@ async fn main() {
             }
 
             elapsed_time -= physics_interval;
-            steps += 1.0;
-        }
-
-        // To limit physics steps if simulation can't keep up.
-        // Avoids fps death spiral
-        let physics_elapsed = physics_start.elapsed().as_secs_f64();
-        if steps > 0.0 && physics_elapsed > 0.0 {
-            let seconds_per_step = physics_elapsed / steps as f64;
-            max_phys_count = frame_budget / seconds_per_step;
-            actual_hz = 1.0 / seconds_per_step
         }
 
         for body in &bodies {
@@ -190,15 +181,9 @@ async fn main() {
             WHITE,
         );
 
-        draw_text(
-            &format!("Actual Hz: {:.0}", actual_hz),
-            20.0,
-            100.0,
-            15.0,
-            WHITE,
-        );
-
         draw_fps();
+
+        egui_macroquad::draw();
 
         next_frame().await;
     }
