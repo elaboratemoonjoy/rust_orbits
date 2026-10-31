@@ -5,7 +5,7 @@ const G: f64 = 6.67430e-11;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Snake Game".to_owned(),
+        window_title: "Orbits".to_owned(),
         window_width: 800,
         window_height: 800,
         window_resizable: false,
