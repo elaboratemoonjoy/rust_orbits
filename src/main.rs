@@ -1,5 +1,9 @@
+mod body_ui;
+
 use egui_macroquad::egui::{self};
 use macroquad::prelude::*;
+
+use crate::body_ui::CelestialBody;
 
 const G: f64 = 6.67430e-11;
 
@@ -28,6 +32,7 @@ struct Star {
 
 #[derive(PartialEq, Clone)]
 struct Body {
+    name: String,
     pos: DVec2,
     vel: DVec2,
     radius: f64,
@@ -35,9 +40,25 @@ struct Body {
     mass: f64,
     grav_param: f64,
 }
-impl Body {
-    fn new(pos: DVec2, vel: DVec2, radius: f64, colour: Color, mass: f64) -> Self {
+
+impl Default for Body {
+    fn default() -> Self {
         Self {
+            name: Default::default(),
+            pos: Default::default(),
+            vel: Default::default(),
+            radius: Default::default(),
+            colour: Default::default(),
+            mass: Default::default(),
+            grav_param: Default::default(),
+        }
+    }
+}
+
+impl Body {
+    fn new(name: String, pos: DVec2, vel: DVec2, radius: f64, colour: Color, mass: f64) -> Self {
+        Self {
+            name,
             pos,
             vel,
             radius,
@@ -88,6 +109,7 @@ async fn setup_simulation() -> SimConfig {
 
     // Default
     bodies.push(Body::new(
+        "Sattelite".to_owned(),
         DVec2 {
             x: 0.0,
             y: 6.371e6 + 200e3,
@@ -98,6 +120,7 @@ async fn setup_simulation() -> SimConfig {
         1e4,
     ));
     bodies.push(Body::new(
+        "Earth".to_owned(),
         DVec2 { x: 0.0, y: 0.0 },
         DVec2 { x: 0.0, y: 0.0 },
         6.371e6,
@@ -113,6 +136,11 @@ async fn setup_simulation() -> SimConfig {
         clear_background(SPACEBLUE);
         egui_macroquad::ui(|egui_ctx| {
             egui::CentralPanel::default().show(egui_ctx, |ui| {
+                let mut visuals = egui::Visuals::dark();
+                visuals.override_text_color = Some(egui::Color32::WHITE);
+
+                egui_ctx.set_visuals(visuals);
+
                 ui.vertical_centered(|ui| {
                     ui.label(
                         egui::RichText::new("Config")
@@ -140,11 +168,33 @@ async fn setup_simulation() -> SimConfig {
                         ui.selectable_value(&mut physics_hz, 10000.0, "10000 hz");
                     });
 
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
+                    for i in 0..bodies.len() {
+                        ui.add(CelestialBody::from_body(&mut bodies[i]));
+                    }
+
+                    let new_style = egui::Button::new(
+                        egui::RichText::new("Add New")
+                            .size(25.0)
+                            .color(egui::Color32::WHITE),
+                    )
+                    .fill(egui::Color32::from_rgb(0, 100, 0));
+
+                    let new_button = ui.add_sized((50.0, 50.0), new_style);
+                    if new_button.clicked() {
+                        let mut new_body = Body {
+                            ..Default::default()
+                        };
+                        new_body.name = "Change me".to_owned();
+                        bodies.push(new_body);
+                    }
+                });
+
                 ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
                     let start_style = egui::Button::new(
                         egui::RichText::new("Start")
                             .size(50.0)
-                            .color(egui::Color32::from_rgb(255, 255, 255)),
+                            .color(egui::Color32::WHITE),
                     )
                     .fill(egui::Color32::from_rgb(0, 100, 0));
 
