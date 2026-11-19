@@ -1,9 +1,8 @@
-use std::{collections::btree_map::Range, ops::RangeInclusive};
+use std::ops::RangeInclusive;
 
 use egui_macroquad::egui::{self, Response, Ui, Widget};
-use macroquad::color::Color;
 
-use crate::Body;
+use crate::models::Body;
 
 pub struct CelestialBody<'a> {
     body: &'a mut Body,

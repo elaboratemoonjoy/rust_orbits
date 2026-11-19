@@ -1,11 +1,15 @@
+mod body_config;
 mod body_ui;
+mod models;
+mod sat_config;
+mod setup;
+mod vector_utils;
+mod widgets;
 
-use egui_macroquad::egui::{self};
+use setup::setup_simulation;
+
 use macroquad::prelude::*;
-
-use crate::body_ui::CelestialBody;
-
-const G: f64 = 6.67430e-11;
+use models::Body;
 
 fn window_conf() -> Conf {
     Conf {
@@ -28,45 +32,6 @@ struct Star {
     x: f32,
     y: f32,
     colour: Color,
-}
-
-#[derive(PartialEq, Clone)]
-struct Body {
-    name: String,
-    pos: DVec2,
-    vel: DVec2,
-    radius: f64,
-    colour: Color,
-    mass: f64,
-    grav_param: f64,
-}
-
-impl Default for Body {
-    fn default() -> Self {
-        Self {
-            name: Default::default(),
-            pos: Default::default(),
-            vel: Default::default(),
-            radius: Default::default(),
-            colour: Default::default(),
-            mass: Default::default(),
-            grav_param: Default::default(),
-        }
-    }
-}
-
-impl Body {
-    fn new(name: String, pos: DVec2, vel: DVec2, radius: f64, colour: Color, mass: f64) -> Self {
-        Self {
-            name,
-            pos,
-            vel,
-            radius,
-            colour,
-            mass,
-            grav_param: G * mass,
-        }
-    }
 }
 
 const SPACEBLUE: Color = Color::new(0.00, 0.00, 0.05, 1.00);
@@ -99,122 +64,6 @@ fn draw_background_stars(stars: &Vec<Star>) {
     for star in stars {
         draw_circle(star.x, star.y, 2.0, star.colour);
     }
-}
-
-async fn setup_simulation() -> SimConfig {
-    let mut sim_config = SimConfig {
-        ..Default::default()
-    };
-    let mut bodies: Vec<Body> = vec![];
-
-    // Default
-    bodies.push(Body::new(
-        "Sattelite".to_owned(),
-        DVec2 {
-            x: 0.0,
-            y: 6.371e6 + 200e3,
-        },
-        DVec2 { x: 8000.0, y: 0.0 },
-        2.0,
-        GREEN,
-        1e4,
-    ));
-    bodies.push(Body::new(
-        "Earth".to_owned(),
-        DVec2 { x: 0.0, y: 0.0 },
-        DVec2 { x: 0.0, y: 0.0 },
-        6.371e6,
-        BLUE,
-        5.972e24,
-    ));
-
-    let mut timewarp = 1.0;
-    let mut physics_hz = 60.0;
-    let mut start = false;
-
-    while !start {
-        clear_background(SPACEBLUE);
-        egui_macroquad::ui(|egui_ctx| {
-            egui::CentralPanel::default().show(egui_ctx, |ui| {
-                let mut visuals = egui::Visuals::dark();
-                visuals.override_text_color = Some(egui::Color32::WHITE);
-
-                egui_ctx.set_visuals(visuals);
-
-                ui.vertical_centered(|ui| {
-                    ui.label(
-                        egui::RichText::new("Config")
-                            .heading()
-                            .color(egui::Color32::from_rgb(255, 255, 255)),
-                    );
-                });
-
-                egui::ComboBox::from_label("Select time warp")
-                    .selected_text(format!("{:?}", timewarp))
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut timewarp, 1.0, "Real time");
-                        ui.selectable_value(&mut timewarp, 10.0, "10x Real time");
-                        ui.selectable_value(&mut timewarp, 100.0, "100x Real time");
-                        ui.selectable_value(&mut timewarp, 1000.0, "1000x Real time");
-                        ui.selectable_value(&mut timewarp, 10000.0, "10000x Real time");
-                    });
-
-                egui::ComboBox::from_label("Select physics resolution")
-                    .selected_text(format!("{:?}", physics_hz))
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut physics_hz, 60.0, "60 hz");
-                        ui.selectable_value(&mut physics_hz, 240.0, "240 hz");
-                        ui.selectable_value(&mut physics_hz, 960.0, "960 hz");
-                        ui.selectable_value(&mut physics_hz, 10000.0, "10000 hz");
-                    });
-
-                ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {
-                    for i in 0..bodies.len() {
-                        ui.add(CelestialBody::from_body(&mut bodies[i]));
-                    }
-
-                    let new_style = egui::Button::new(
-                        egui::RichText::new("Add New")
-                            .size(25.0)
-                            .color(egui::Color32::WHITE),
-                    )
-                    .fill(egui::Color32::from_rgb(0, 100, 0));
-
-                    let new_button = ui.add_sized((50.0, 50.0), new_style);
-                    if new_button.clicked() {
-                        let mut new_body = Body {
-                            ..Default::default()
-                        };
-                        new_body.name = "Change me".to_owned();
-                        bodies.push(new_body);
-                    }
-                });
-
-                ui.with_layout(egui::Layout::bottom_up(egui::Align::Center), |ui| {
-                    let start_style = egui::Button::new(
-                        egui::RichText::new("Start")
-                            .size(50.0)
-                            .color(egui::Color32::WHITE),
-                    )
-                    .fill(egui::Color32::from_rgb(0, 100, 0));
-
-                    let start_button = ui.add_sized((200.0, 50.0), start_style);
-
-                    if start_button.clicked() {
-                        sim_config.timewarp = timewarp;
-                        sim_config.physics_hz = physics_hz;
-                        sim_config.bodies = bodies.clone();
-
-                        start = true;
-                    }
-                });
-            });
-        });
-        egui_macroquad::draw();
-        next_frame().await;
-    }
-
-    sim_config
 }
 
 #[macroquad::main(window_conf)]
