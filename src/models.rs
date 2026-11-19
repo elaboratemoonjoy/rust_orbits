@@ -44,7 +44,7 @@ impl Default for Body {
     fn default() -> Self {
         Self {
             id: NEXT_BODY_ID.fetch_add(1, Ordering::Relaxed),
-            name: Default::default(),
+            name: "Rename me".to_owned(),
             pos: Default::default(),
             vel: Default::default(),
             radius: Default::default(),
@@ -60,6 +60,41 @@ pub struct SimConfig {
     pub timewarp: f64,
     pub physics_hz: f64,
     pub bodies: Vec<Body>,
+}
+
+impl From<SetupConfig> for SimConfig {
+    fn from(mut setup: SetupConfig) -> Self {
+        for &(body_id, planet_id) in &setup.ref_planet_map {
+            let body_idx = setup.bodies.iter().position(|x| x.id == body_id);
+            let planet_idx = setup.bodies.iter().position(|x| x.id == planet_id);
+
+            if let (Some(body_idx), Some(planet_idx)) = (body_idx, planet_idx) {
+                let (pos, vel) = {
+                    let planet = &setup.bodies[planet_idx];
+                    (planet.pos, planet.vel)
+                };
+
+                let body = &mut setup.bodies[body_idx];
+
+                body.pos += pos;
+                body.vel += vel;
+            }
+        }
+
+        Self {
+            timewarp: setup.timewarp,
+            physics_hz: setup.physics_hz,
+            bodies: setup.bodies,
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct SetupConfig {
+    pub timewarp: f64,
+    pub physics_hz: f64,
+    pub bodies: Vec<Body>,
+    pub ref_planet_map: Vec<(u64, u64)>,
 }
 
 pub struct Star {
