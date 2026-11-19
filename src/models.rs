@@ -54,3 +54,16 @@ impl Default for Body {
         }
     }
 }
+
+#[derive(Default)]
+pub struct SimConfig {
+    pub timewarp: f64,
+    pub physics_hz: f64,
+    pub bodies: Vec<Body>,
+}
+
+pub struct Star {
+    pub x: f32,
+    pub y: f32,
+    pub colour: Color,
+}
