@@ -1,5 +1,3 @@
-use crate::setup::setup_simulation;
-
 use crate::models::{SimConfig, Star};
 use macroquad::prelude::*;
 

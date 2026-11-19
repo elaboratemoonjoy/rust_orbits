@@ -1,11 +1,9 @@
-use egui_macroquad::egui::{self, CornerRadius};
-use macroquad::{conf, prelude::*};
+use egui_macroquad::egui::{self};
+use macroquad::prelude::*;
 
 use crate::models::Body;
 use crate::widgets::action_button;
 use crate::{SimConfig, body_ui::CelestialBody};
-
-use crate::sat_config::configure_sattelite;
 
 const SPACEBLUE: Color = Color::new(0.00, 0.00, 0.05, 1.00);
 
@@ -36,7 +34,7 @@ fn default_bodies() -> Vec<Body> {
 }
 
 pub async fn setup_simulation() -> SimConfig {
-    let mut sim_config = SimConfig {
+    let mut sim_config: SimConfig = SimConfig {
         timewarp: 1.0,
         physics_hz: 60.0,
         bodies: default_bodies(),
